@@ -72,7 +72,10 @@ open class VideoPlayerView: UIView {
     
     /// Playback status changes, such as from play to pause.
     open var stateDidChanged: ((State) -> Void)?
-    
+
+    /// isMute status changes.
+    open var isMuteDidChanged: ((Bool) -> Void)?
+
     /// Replay after playing to the end.
     open var replay: (() -> Void)?
     
@@ -129,7 +132,8 @@ open class VideoPlayerView: UIView {
     private var playerItemStatusObservation: NSKeyValueObservation?
     private var playerLayerReadyForDisplayObservation: NSKeyValueObservation?
     private var playerTimeControlStatusObservation: NSKeyValueObservation?
-    
+    private var playerIsMuteObservation: NSKeyValueObservation?
+
     // MARK: - Lifecycle
     
     open override var contentMode: UIView.ContentMode {
@@ -327,6 +331,7 @@ private extension VideoPlayerView {
         guard let player = player else {
             playerLayerReadyForDisplayObservation = nil
             playerTimeControlStatusObservation = nil
+            playerIsMuteObservation = nil
             return
         }
         
@@ -354,6 +359,10 @@ private extension VideoPlayerView {
             @unknown default:
                 break
             }
+        }
+
+        playerIsMuteObservation = player.observe(\.isMuted) { [unowned self] player, _ in
+            isMuteDidChanged?(player.isMuted)
         }
     }
     

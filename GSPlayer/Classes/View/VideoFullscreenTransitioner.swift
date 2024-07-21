@@ -101,7 +101,9 @@ private extension VideoFullscreenTransitioner {
             if let fullscreenVideoGravity = self.fullscreenVideoGravity {
                 CATransaction.begin()
                 CATransaction.setAnimationDuration(duration)
-                CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut))
+                if #available(iOS 12.0, *) {
+                    CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut))
+                }
                 self.playerVideoGravity = playerView.playerLayer.videoGravity
                 playerView.playerLayer.videoGravity = fullscreenVideoGravity
                 CATransaction.commit()
@@ -145,7 +147,9 @@ private extension VideoFullscreenTransitioner {
             if let playerVideoGravity = self.playerVideoGravity {
                 CATransaction.begin()
                 CATransaction.setAnimationDuration(duration)
-                CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut))
+                if #available(iOS 12.0, *) {
+                    CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut))
+                }
                 playerView.playerLayer.videoGravity = playerVideoGravity
                 CATransaction.commit()
             }
