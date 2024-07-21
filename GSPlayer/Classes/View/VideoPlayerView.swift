@@ -342,7 +342,7 @@ private extension VideoPlayerView {
             case .paused:
                 guard !self.isReplay else { break }
                 self.state = .paused(playProgress: self.playProgress, bufferProgress: self.bufferProgress)
-                if self.pausedReason == .waitingKeepUp { player.playImmediately(atRate: speedRate) }
+                // if self.pausedReason == .waitingKeepUp { player.playImmediately(atRate: speedRate) } // TDT: Conflict play/pause control when embeded with AVPlayerViewController
             case .waitingToPlayAtSpecifiedRate:
                 break
             case .playing:
