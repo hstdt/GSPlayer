@@ -60,18 +60,37 @@ extension AVPlayerItem {
             self.init(url: url)
             return
         }
-        
-        guard let loaderURL = (AVPlayerItem.loaderPrefix + url.absoluteString + ".mp4").url else {
+        guard var urlComps = URLComponents(string: url.absoluteString) else {
+            self.init(url: url)
+            return
+        }
+        let urlQueryItems = urlComps.queryItems ?? []
+        urlComps.query = nil
+        guard let nonQueryURL = urlComps.url else {
+            self.init(url: url)
+            return
+        }
+
+        guard let loaderURL = (AVPlayerItem.loaderPrefix + nonQueryURL.absoluteString + ".mp4").url else {
             VideoLoadManager.shared.reportError?(NSError(
                 domain: "me.gesen.player.loader",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Wrong url \(url.absoluteString)，unable to initialize Loader"]
+                userInfo: [NSLocalizedDescriptionKey: "Wrong url \(nonQueryURL.absoluteString)，unable to initialize Loader"]
             ))
             self.init(url: url)
             return
         }
-        
-        let urlAsset = AVURLAsset(url: loaderURL)
+        guard var loaderUrlComps = URLComponents(string: loaderURL.absoluteString) else {
+            self.init(url: url)
+            return
+        }
+        loaderUrlComps.queryItems = urlQueryItems
+        guard let queryLoaderURL = loaderUrlComps.url else {
+            self.init(url: url)
+            return
+        }
+
+        let urlAsset = AVURLAsset(url: queryLoaderURL)
         urlAsset.resourceLoader.setDelegate(VideoLoadManager.shared, queue: .main)
         
         self.init(asset: urlAsset)
