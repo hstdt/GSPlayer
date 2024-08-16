@@ -29,8 +29,8 @@ open class VideoPlayerView: UIView {
         case error(NSError)
     }
     
-    public enum PausedReason: Int {
-        
+    @objc public enum PausedReason: Int {
+
         /// Pause because the player is not visible, stateDidChanged is not called when the buffer progress changes
         case hidden
         
@@ -283,14 +283,11 @@ open class VideoPlayerView: UIView {
             self?.player?.currentItem?.select(group.options[index], in: group)
         }
     }
-}
 
-public extension VideoPlayerView {
-    
     /// Pause video.
     ///
     /// - Parameter reason: Reason for pause
-    func pause(reason: PausedReason) {
+    open func pause(reason: PausedReason) {
         pausedReason = reason
         pause()
     }
