@@ -71,8 +71,21 @@ extension VideoRequestLoader: VideoDownloaderDelegate {
         fulfillContentInfomation()
     }
     
-    func downloader(_ downloader: VideoDownloader, didReceive data: Data) {
-        request.dataRequest?.respond(with: data)
+    func downloader(_ downloader: VideoDownloader, didReceive data: Data, offset: Int) {
+        guard let dataRequest = request.dataRequest else { return }
+
+        let currentOffset = dataRequest.currentOffset == 0 ? dataRequest.requestedOffset : dataRequest.currentOffset
+        let requestedEnd = dataRequest.requestedOffset + Int64(dataRequest.requestedLength)
+        let dataOffset = Int64(offset)
+        let dataEnd = dataOffset + Int64(data.count)
+        let responseStart = max(currentOffset, dataOffset)
+        let responseEnd = min(requestedEnd, dataEnd)
+
+        guard responseStart < responseEnd else { return }
+
+        let startIndex = Int(responseStart - dataOffset)
+        let endIndex = Int(responseEnd - dataOffset)
+        request.dataRequest?.respond(with: data.subdata(in: startIndex..<endIndex))
     }
     
     func downloader(_ downloader: VideoDownloader, didFinished error: Error?) {

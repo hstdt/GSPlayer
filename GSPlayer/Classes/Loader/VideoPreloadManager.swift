@@ -77,7 +77,7 @@ extension VideoPreloadManager: VideoDownloaderDelegate {
         
     }
     
-    public func downloader(_ downloader: VideoDownloader, didReceive data: Data) {
+    public func downloader(_ downloader: VideoDownloader, didReceive data: Data, offset: Int) {
         
     }
     
