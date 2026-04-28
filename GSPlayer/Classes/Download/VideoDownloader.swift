@@ -11,7 +11,7 @@ import Foundation
 public protocol VideoDownloaderDelegate: AnyObject {
     
     func downloader(_ downloader: VideoDownloader, didReceive response: URLResponse)
-    func downloader(_ downloader: VideoDownloader, didReceive data: Data)
+    func downloader(_ downloader: VideoDownloader, didReceive data: Data, offset: Int)
     func downloader(_ downloader: VideoDownloader, didFinished error: Error?)
     
 }
@@ -86,8 +86,8 @@ extension VideoDownloader: VideoDownloaderHandlerDelegate {
         delegate?.downloader(self, didReceive: response)
     }
     
-    func handler(_ handler: VideoDownloaderHandler, didReceive data: Data, isLocal: Bool) {
-        delegate?.downloader(self, didReceive: data)
+    func handler(_ handler: VideoDownloaderHandler, didReceive data: Data, offset: Int, isLocal: Bool) {
+        delegate?.downloader(self, didReceive: data, offset: offset)
     }
     
     func handler(_ handler: VideoDownloaderHandler, didFinish error: Error?) {

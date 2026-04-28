@@ -25,7 +25,7 @@ private let delegateQueue: OperationQueue = {
 protocol VideoDownloaderHandlerDelegate: AnyObject {
     
     func handler(_ handler: VideoDownloaderHandler, didReceive response: URLResponse)
-    func handler(_ handler: VideoDownloaderHandler, didReceive data: Data, isLocal: Bool)
+    func handler(_ handler: VideoDownloaderHandler, didReceive data: Data, offset: Int, isLocal: Bool)
     func handler(_ handler: VideoDownloaderHandler, didFinish error: Error?)
     
 }
@@ -44,6 +44,8 @@ class VideoDownloaderHandler {
     
     private var isCancelled = false
     private var startOffset = 0
+    private var currentActionRange: NSRange?
+    private var currentRequestUsesRange = false
     private var lastNotifyTime: TimeInterval = 0
     
     init(url: URL, actions: [VideoCacheAction], cacheHandler: VideoCacheHandler) {
@@ -89,6 +91,13 @@ extension VideoDownloaderHandler: VideoDownloaderSessionDelegateHandlerDelegate 
             mimeType.contains("video/")
             else { completionHandler(.cancel); return }
         #endif
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 200,
+           currentRequestUsesRange,
+           let currentActionRange {
+            print("[GSPlayer] Warning: Range request returned 200 OK. requested bytes=\(currentActionRange.location)-\(currentActionRange.upperBound - 1), contentLength=\(httpResponse.expectedContentLength)")
+            startOffset = 0
+        }
         
         delegate?.handler(self, didReceive: response)
         
@@ -105,7 +114,7 @@ extension VideoDownloaderHandler: VideoDownloaderSessionDelegateHandlerDelegate 
             
             startOffset += data.count
             
-            delegate?.handler(self, didReceive: data, isLocal: false)
+            delegate?.handler(self, didReceive: data, offset: range.location, isLocal: false)
             notifyProgress(flush: false)
         }
         
@@ -138,7 +147,7 @@ private extension VideoDownloaderHandler {
             
             guard action.actionType == .remote else {
                 let data = cacheHandler.cachedData(for: action.range)
-                delegate?.handler(self, didReceive: data, isLocal: true)
+                delegate?.handler(self, didReceive: data, offset: action.range.location, isLocal: true)
                 continue
             }
             
@@ -167,6 +176,8 @@ private extension VideoDownloaderHandler {
         let start = action.range.location
         let end = action.range.location + action.range.length - 1
         urlRequest.addValue("bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
+        currentActionRange = action.range
+        currentRequestUsesRange = true
         
         for field in VideoLoadManager.shared.customHTTPHeaderFields?(url) ?? [:] {
             urlRequest.addValue(field.value, forHTTPHeaderField: field.key)
