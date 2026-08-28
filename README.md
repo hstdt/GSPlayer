@@ -202,6 +202,16 @@ Play a video of the specified url.
 func play(for url: URL)
 ```
 
+Recreate the player and item for a URL, including when it is the current URL. Use this after a confirmed item failure or a stale resume attempt; it is different from `replay()`, which only seeks the existing item to the beginning.
+```swift
+func reload(for url: URL)
+```
+
+Subclasses can observe state transitions before the public callback is invoked.
+```swift
+func playbackStateDidChange(_ state: State, from previousState: State)
+```
+
 Pause video.
 ```swift
 func pause(reason: PausedReason)

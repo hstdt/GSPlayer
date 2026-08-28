@@ -73,6 +73,9 @@ open class VideoPlayerView: UIView {
     /// Playback status changes, such as from play to pause.
     open var stateDidChanged: ((State) -> Void)?
 
+    /// Subclass hook invoked before `stateDidChanged` when playback state changes.
+    open func playbackStateDidChange(_ state: State, from previousState: State) {}
+
     /// isMute status changes.
     open var isMuteDidChanged: ((Bool) -> Void)?
 
@@ -179,43 +182,65 @@ open class VideoPlayerView: UIView {
     open func play(for url: URL) {
         guard playerURL != url else {
             if player?.timeControlStatus == .paused {
-                pausedReason = .waitingKeepUp
-                player?.playImmediately(atRate: speedRate)
+                resume()
             }
             return
         }
-        
+
+        load(for: url)
+    }
+
+    /// Recreate the player and item even when the URL has not changed.
+    ///
+    /// Use this after the current item has failed or remained stale after a resume attempt.
+    open func reload(for url: URL) {
+        load(for: url)
+    }
+
+    private func load(for url: URL) {
+        let previousIsMuted = player?.isMuted
+        let previousVolume = player?.volume
+
         observe(player: nil)
         observe(playerItem: nil)
-        
+
         self.player?.currentItem?.cancelPendingSeeks()
         self.player?.currentItem?.asset.cancelLoading()
-        
+
         let player = AVPlayer()
         player.automaticallyWaitsToMinimizeStalling = false
-        
+        if let previousIsMuted = previousIsMuted {
+            player.isMuted = previousIsMuted
+        }
+        if let previousVolume = previousVolume {
+            player.volume = previousVolume
+        }
+
         let playerItem = AVPlayerItem(loader: url)
         playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
-        
+
         self.player = player
         self.playerURL = url
         self.pausedReason = .waitingKeepUp
         self.replayCount = 0
         self.isReplay = false
         self.isLoaded = false
-        
+
         if playerItem.isEnoughToPlay || url.isFileURL {
             state = .none
             isLoaded = playerItem.status == .readyToPlay
-            player.playImmediately(atRate: speedRate)
         } else {
             state = .loading
         }
-        
+
         player.replaceCurrentItem(with: playerItem)
-        
+
         observe(player: player)
         observe(playerItem: playerItem)
+
+        if playerItem.isEnoughToPlay || url.isFileURL {
+            player.playImmediately(atRate: speedRate)
+        }
     }
     
     /// Replay video.
@@ -307,6 +332,13 @@ private extension VideoPlayerView {
             name: .AVPlayerItemDidPlayToEndTime,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerItemFailedToPlayToEnd(notification:)),
+            name: .AVPlayerItemFailedToPlayToEndTime,
+            object: nil
+        )
         
         layer.addSublayer(playerLayer)
     }
@@ -322,6 +354,7 @@ private extension VideoPlayerView {
         default:                isHidden = true
         }
         
+        playbackStateDidChange(state, from: previous)
         stateDidChanged?(state)
     }
     
@@ -423,6 +456,20 @@ private extension VideoPlayerView {
                 self.player?.playImmediately(atRate: self.speedRate)
             }
         }
+    }
+
+    @objc func playerItemFailedToPlayToEnd(notification: Notification) {
+        guard let item = notification.object as? AVPlayerItem,
+              item == player?.currentItem else {
+            return
+        }
+
+        let notificationError = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError
+        let itemError = item.error as NSError?
+        guard let error = notificationError ?? itemError else {
+            return
+        }
+        state = .error(error)
     }
     
 }
