@@ -11,6 +11,21 @@ import AVFoundation
 public class VideoLoadManager: NSObject {
     
     public static let shared = VideoLoadManager()
+
+    // Compat: 资源加载与网络回调共用串行后台队列，避免缓存落盘阻塞主线程，并保持加载状态的访问顺序。
+    static let workQueue = DispatchQueue(
+        label: "me.gesen.player.loader",
+        qos: .userInitiated
+    )
+
+    static let sessionDelegateQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "me.gesen.player.loader.url-session"
+        queue.maxConcurrentOperationCount = 1
+        queue.qualityOfService = .userInitiated
+        queue.underlyingQueue = workQueue
+        return queue
+    }()
     
     public var reportError: ((Error) -> Void)?
     

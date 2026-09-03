@@ -16,12 +16,6 @@ extension Notification.Name {
     
 }
 
-private let delegateQueue: OperationQueue = {
-    let queue = OperationQueue()
-    queue.maxConcurrentOperationCount = 2
-    return queue
-}()
-
 protocol VideoDownloaderHandlerDelegate: AnyObject {
     
     func handler(_ handler: VideoDownloaderHandler, didReceive response: URLResponse)
@@ -164,7 +158,7 @@ private extension VideoDownloaderHandler {
         session = URLSession(
             configuration: .ephemeral,
             delegate: VideoDownloaderSessionDelegateHandler(delegate: self),
-            delegateQueue: .main
+            delegateQueue: VideoLoadManager.sessionDelegateQueue
         )
         
         var urlRequest = URLRequest(
